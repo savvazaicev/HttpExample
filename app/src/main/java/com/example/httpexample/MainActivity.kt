@@ -3,6 +3,7 @@ package com.example.httpexample
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.annotation.WorkerThread
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
@@ -18,6 +19,7 @@ private const val ENDPOINT =
     "http://192.168.100.7:3000"  // Im using json-server running on my localhost and device
 private const val BOOKS_URI = "/books"
 private const val TITLE = "title"
+private const val ID = "/id"
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +31,22 @@ class MainActivity : AppCompatActivity() {
             Thread {
                 addBook(book.toString())
             }.start()
+        }
+        edit.setOnClickListener {
+            val book = editText.text.toString()
+            val id = textNumber.text.toString()
+            Thread {
+                editBook(book, id)
+            }.start()
+            editText.text = null
+            textNumber.text = null
+        }
+        remove.setOnClickListener {
+            val id = textNumber.text.toString()
+            Thread {
+                removeBook(id)
+            }.start()
+            textNumber.text = null
         }
         Thread {
             getBooksAndShowIt()
@@ -88,6 +106,52 @@ class MainActivity : AppCompatActivity() {
             }
             OutputStreamWriter(httpUrlConnection.outputStream).use {
                 it.write(body.toString())
+            }
+            httpUrlConnection.responseCode
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } finally {
+            httpUrlConnection?.disconnect()
+        }
+        getBooksAndShowIt()
+    }
+
+    @WorkerThread
+    fun editBook(book: String, id: String) {
+        var httpUrlConnection: HttpURLConnection? = null
+        try {
+            httpUrlConnection = URL("$ENDPOINT$BOOKS_URI/$id").openConnection() as HttpURLConnection
+            val body = JSONObject().apply {
+                put(TITLE, book)
+            }
+            httpUrlConnection.apply {
+                connectTimeout = 10000 // 10 seconds
+                requestMethod = "PATCH"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json")
+            }
+            OutputStreamWriter(httpUrlConnection.outputStream).use {
+                it.write(body.toString())
+            }
+            Log.d("mytag", body.toString(1))
+            httpUrlConnection.responseCode
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } finally {
+            httpUrlConnection?.disconnect()
+        }
+        getBooksAndShowIt()
+    }
+
+    @WorkerThread
+    fun removeBook(id: String) {
+        var httpUrlConnection: HttpURLConnection? = null
+        try {
+            httpUrlConnection = URL("$ENDPOINT$BOOKS_URI/$id").openConnection() as HttpURLConnection
+            httpUrlConnection.apply {
+                connectTimeout = 10000 // 10 seconds
+                requestMethod = "DELETE"
+                doOutput = true
             }
             httpUrlConnection.responseCode
         } catch (e: IOException) {
