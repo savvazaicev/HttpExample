@@ -3,162 +3,68 @@ package com.example.httpexample
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
-import androidx.annotation.WorkerThread
 import androidx.appcompat.app.AppCompatActivity
+import com.example.httpexample.connection.HttpUrlConnection.addBook
+import com.example.httpexample.connection.HttpUrlConnection.editBook
+import com.example.httpexample.connection.HttpUrlConnection.getBooks
+import com.example.httpexample.connection.HttpUrlConnection.removeBook
+import com.example.httpexample.model.Book
 import kotlinx.android.synthetic.main.activity_main.*
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.IOException
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
-private const val ENDPOINT =
-    "http://192.168.100.7:3000"  // Im using json-server running on my localhost and device
-private const val BOOKS_URI = "/books"
-private const val TITLE = "title"
-private const val ID = "/id"
+class MainActivity : AppCompatActivity(), CoroutineScope {
 
-class MainActivity : AppCompatActivity() {
+    private val job = SupervisorJob()
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.IO + job
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        launch { showBooks(getBooks()) }
+
         button.setOnClickListener {
-            val book = editText.text
-            editText.text = null
-            Thread {
-                addBook(book.toString())
-            }.start()
+            val name = bookName.text.toString()
+            bookName.text = null
+
+            launch {
+                addBook(name)
+                showBooks(getBooks())
+            }
         }
         edit.setOnClickListener {
-            val book = editText.text.toString()
-            val id = textNumber.text.toString()
-            Thread {
-                editBook(book, id)
-            }.start()
-            editText.text = null
-            textNumber.text = null
+            val name = bookName.text.toString()
+            val id = bookId.text.toString()
+            bookName.text = null
+            bookId.text = null
+
+            launch {
+                editBook(name, id)
+                showBooks(getBooks())
+            }
         }
         remove.setOnClickListener {
-            val id = textNumber.text.toString()
-            Thread {
+            val id = bookId.text.toString()
+            bookId.text = null
+
+            launch {
                 removeBook(id)
-            }.start()
-            textNumber.text = null
-        }
-        Thread {
-            getBooksAndShowIt()
-        }.start()
-    }
-
-    @WorkerThread
-    fun getBooksAndShowIt() {
-        var httpUrlConnection: HttpURLConnection? = null
-        try {
-            httpUrlConnection = URL(ENDPOINT + BOOKS_URI).openConnection() as HttpURLConnection
-            httpUrlConnection.apply {
-                connectTimeout = 10000 // 10 seconds
-                requestMethod = "GET"
-                doInput = true
+                showBooks(getBooks())
             }
-            if (httpUrlConnection.responseCode != HttpURLConnection.HTTP_OK) {
-                // show error toast
-                return
-            }
-            val streamReader = InputStreamReader(httpUrlConnection.inputStream)
-            var text: String = ""
-            streamReader.use {
-                text = it.readText()
-            }
-
-            val books = mutableListOf<String>()
-            val json = JSONArray(text)
-            for (i in 0 until json.length()) {
-                val jsonBook = json.getJSONObject(i)
-                val title = jsonBook.getString(TITLE)
-                books.add(title)
-            }
-            Handler(Looper.getMainLooper()).post {
-                textView.text = books.reduce { acc, s -> "$acc\n$s" }
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } finally {
-            httpUrlConnection?.disconnect()
         }
     }
 
-    @WorkerThread
-    fun addBook(book: String) {
-        var httpUrlConnection: HttpURLConnection? = null
-        try {
-            httpUrlConnection = URL(ENDPOINT + BOOKS_URI).openConnection() as HttpURLConnection
-            val body = JSONObject().apply {
-                put(TITLE, book)
-            }
-            httpUrlConnection.apply {
-                connectTimeout = 10000 // 10 seconds
-                requestMethod = "POST"
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json")
-            }
-            OutputStreamWriter(httpUrlConnection.outputStream).use {
-                it.write(body.toString())
-            }
-            httpUrlConnection.responseCode
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } finally {
-            httpUrlConnection?.disconnect()
+    private fun showBooks(books: MutableList<Book>) {
+        Handler(Looper.getMainLooper()).post {
+            booksTextView.text =
+                books.map { "${it.id}.${it.title}" }.reduce { acc, s -> "$acc\n$s" }
         }
-        getBooksAndShowIt()
     }
 
-    @WorkerThread
-    fun editBook(book: String, id: String) {
-        var httpUrlConnection: HttpURLConnection? = null
-        try {
-            httpUrlConnection = URL("$ENDPOINT$BOOKS_URI/$id").openConnection() as HttpURLConnection
-            val body = JSONObject().apply {
-                put(TITLE, book)
-            }
-            httpUrlConnection.apply {
-                connectTimeout = 10000 // 10 seconds
-                requestMethod = "PATCH"
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json")
-            }
-            OutputStreamWriter(httpUrlConnection.outputStream).use {
-                it.write(body.toString())
-            }
-            Log.d("mytag", body.toString(1))
-            httpUrlConnection.responseCode
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } finally {
-            httpUrlConnection?.disconnect()
-        }
-        getBooksAndShowIt()
-    }
-
-    @WorkerThread
-    fun removeBook(id: String) {
-        var httpUrlConnection: HttpURLConnection? = null
-        try {
-            httpUrlConnection = URL("$ENDPOINT$BOOKS_URI/$id").openConnection() as HttpURLConnection
-            httpUrlConnection.apply {
-                connectTimeout = 10000 // 10 seconds
-                requestMethod = "DELETE"
-                doOutput = true
-            }
-            httpUrlConnection.responseCode
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } finally {
-            httpUrlConnection?.disconnect()
-        }
-        getBooksAndShowIt()
+    override fun onDestroy() {
+        super.onDestroy()
+        coroutineContext.cancelChildren()
     }
 }
