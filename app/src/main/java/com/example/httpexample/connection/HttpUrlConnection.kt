@@ -1,12 +1,15 @@
 package com.example.httpexample.connection
 
 import androidx.annotation.WorkerThread
-import com.example.httpexample.Constants.DELETE
-import com.example.httpexample.Constants.GET
-import com.example.httpexample.Constants.PATCH
-import com.example.httpexample.Constants.POST
 import com.example.httpexample.model.Book
-import org.json.JSONArray
+import com.example.httpexample.utils.Constants.BOOKS_URI
+import com.example.httpexample.utils.Constants.DELETE
+import com.example.httpexample.utils.Constants.ENDPOINT
+import com.example.httpexample.utils.Constants.GET
+import com.example.httpexample.utils.Constants.PATCH
+import com.example.httpexample.utils.Constants.POST
+import com.example.httpexample.utils.Constants.TITLE
+import com.example.httpexample.utils.tooBookList
 import org.json.JSONObject
 import java.io.IOException
 import java.io.InputStreamReader
@@ -14,16 +17,11 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 
-private const val ENDPOINT =
-    "http://192.168.100.7:3000"  // Im using json-server running on my localhost and device
-private const val BOOKS_URI = "/books"
-private const val TITLE = "title"
-private const val ID = "id"
 
-object HttpUrlConnection {
+object HttpUrlConnection : Connection {
 
     @WorkerThread
-    fun getBooks(): MutableList<Book> {
+    override fun getBooks(): MutableList<Book> {
         val httpUrlConnection: HttpURLConnection = configureHttpURLConnection(GET)
         try {
             if (httpUrlConnection.responseCode != HttpURLConnection.HTTP_OK) return mutableListOf()
@@ -32,15 +30,7 @@ object HttpUrlConnection {
             var text = ""
             streamReader.use { text = it.readText() }
 
-            val books = mutableListOf<Book>()
-            val json = JSONArray(text)
-            for (i in 0 until json.length()) {
-                val jsonBook = json.getJSONObject(i)
-                val id = jsonBook.getInt(ID)
-                val title = jsonBook.getString(TITLE)
-                books.add(Book(id, title))
-            }
-            return books
+            return text.tooBookList()
         } catch (e: IOException) {
             e.printStackTrace()
         } finally {
@@ -50,7 +40,7 @@ object HttpUrlConnection {
     }
 
     @WorkerThread
-    fun addBook(book: String) {
+    override fun addBook(book: String) {
         val httpUrlConnection = configureHttpURLConnection(POST)
         val body = JSONObject().apply {
             put(TITLE, book)
@@ -68,7 +58,7 @@ object HttpUrlConnection {
     }
 
     @WorkerThread
-    fun editBook(book: String, id: String) {
+    override fun editBook(book: String, id: String) {
         val httpUrlConnection = configureHttpURLConnection(PATCH, id)
         val body = JSONObject().apply {
             put(TITLE, book)
@@ -86,7 +76,7 @@ object HttpUrlConnection {
     }
 
     @WorkerThread
-    fun removeBook(id: String) {
+    override fun removeBook(id: String) {
         val httpUrlConnection = configureHttpURLConnection(DELETE, id)
         try {
             httpUrlConnection.responseCode
