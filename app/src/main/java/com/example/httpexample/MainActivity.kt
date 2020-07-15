@@ -4,10 +4,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
-import com.example.httpexample.connection.OkHttp.getBooks
-import com.example.httpexample.connection.OkHttp.addBook
-import com.example.httpexample.connection.OkHttp.editBook
-import com.example.httpexample.connection.OkHttp.removeBook
+import com.example.httpexample.connection.RetrofitConnection.addBook
+import com.example.httpexample.connection.RetrofitConnection.editBook
+import com.example.httpexample.connection.RetrofitConnection.removeBook
+import com.example.httpexample.connection.RetrofitConnection.getBooks
 import com.example.httpexample.model.Book
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*

@@ -9,7 +9,7 @@ import com.example.httpexample.utils.Constants.GET
 import com.example.httpexample.utils.Constants.PATCH
 import com.example.httpexample.utils.Constants.POST
 import com.example.httpexample.utils.Constants.TITLE
-import com.example.httpexample.utils.tooBookList
+import com.example.httpexample.utils.toBookList
 import org.json.JSONObject
 import java.io.IOException
 import java.io.InputStreamReader
@@ -30,7 +30,7 @@ object HttpUrlConnection : Connection {
             var text = ""
             streamReader.use { text = it.readText() }
 
-            return text.tooBookList()
+            return text.toBookList()
         } catch (e: IOException) {
             e.printStackTrace()
         } finally {
@@ -40,10 +40,10 @@ object HttpUrlConnection : Connection {
     }
 
     @WorkerThread
-    override fun addBook(book: String) {
+    override fun addBook(title: String) {
         val httpUrlConnection = configureHttpURLConnection(POST)
         val body = JSONObject().apply {
-            put(TITLE, book)
+            put(TITLE, title)
         }
         try {
             OutputStreamWriter(httpUrlConnection.outputStream).use {
@@ -58,10 +58,10 @@ object HttpUrlConnection : Connection {
     }
 
     @WorkerThread
-    override fun editBook(book: String, id: String) {
+    override fun editBook(title: String, id: String) {
         val httpUrlConnection = configureHttpURLConnection(PATCH, id)
         val body = JSONObject().apply {
-            put(TITLE, book)
+            put(TITLE, title)
         }
         try {
             OutputStreamWriter(httpUrlConnection.outputStream).use {

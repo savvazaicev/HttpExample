@@ -4,7 +4,7 @@ import com.example.httpexample.model.Book
 import com.example.httpexample.utils.Constants.BOOKS_URI
 import com.example.httpexample.utils.Constants.ENDPOINT
 import com.example.httpexample.utils.Constants.TITLE
-import com.example.httpexample.utils.tooBookList
+import com.example.httpexample.utils.toBookList
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -22,12 +22,12 @@ object OkHttp : Connection {
             .build()
 
         client.newCall(request).execute()
-            .use { response -> return response.body!!.string().tooBookList() }
+            .use { response -> return response.body!!.string().toBookList() }
     }
 
-    override fun addBook(book: String) {
+    override fun addBook(title: String) {
         val formBody = FormBody.Builder()
-            .add(TITLE, book)
+            .add(TITLE, title)
             .build()
 
         val request = Request.Builder()
@@ -38,9 +38,9 @@ object OkHttp : Connection {
         client.newCall(request).execute()
     }
 
-    override fun editBook(book: String, id: String) {
+    override fun editBook(title: String, id: String) {
         val formBody = FormBody.Builder()
-            .add(TITLE, book)
+            .add(TITLE, title)
             .build()
 
         val request = Request.Builder()

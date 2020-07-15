@@ -5,7 +5,7 @@ import com.example.httpexample.utils.Constants.ID
 import com.example.httpexample.utils.Constants.TITLE
 import org.json.JSONArray
 
-fun String.tooBookList(): MutableList<Book> {
+fun String.toBookList(): MutableList<Book> {
     val books = mutableListOf<Book>()
     val json = JSONArray(this)
     for (i in 0 until json.length()) {

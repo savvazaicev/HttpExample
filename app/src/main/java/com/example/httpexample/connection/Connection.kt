@@ -4,7 +4,7 @@ import com.example.httpexample.model.Book
 
 interface Connection {
     fun getBooks(): MutableList<Book>
-    fun addBook(book: String)
-    fun editBook(book: String, id: String)
+    fun addBook(title: String)
+    fun editBook(title: String, id: String)
     fun removeBook(id: String)
 }
